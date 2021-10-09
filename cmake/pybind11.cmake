@@ -4,19 +4,19 @@ if (NOT pybind11_FOUND)
 endif()
 
 if (ENABLE_PYBIND11)
-    add_library (qrack_pybind11 SHARED
-        src/pybind11_api.cpp
+    add_library (pureqrack SHARED
+        src/pureqrack.cpp
         )
 
     execute_process(COMMAND "echo $(python3-config --extension-suffix)" OUTPUT_VARIABLE PYBIND11_EXTENSION)
-    set_target_properties(qrack_pybind11 PROPERTIES
+    set_target_properties(pureqrack PROPERTIES
         SUFFIX "${PYBIND11_EXTENSION}" )
-    set_target_properties (qrack_pybind11 PROPERTIES
+    set_target_properties (pureqrack PROPERTIES
         VERSION ${PROJECT_VERSION}
         )
 
-    target_link_libraries (qrack_pybind11 ${QRACK_LIBS})
-    target_include_directories(qrack_pybind11 PRIVATE ${pybind11_INCLUDE_DIRS})
-    target_compile_options (qrack_pybind11 PUBLIC ${QRACK_COMPILE_OPTS})
-    target_compile_definitions(qrack_pybind11 PUBLIC -DDLL_EXPORTS)
+    target_link_libraries (pureqrack ${QRACK_LIBS})
+    target_include_directories(pureqrack PRIVATE ${pybind11_INCLUDE_DIRS})
+    target_compile_options (pureqrack PUBLIC ${QRACK_COMPILE_OPTS})
+    target_compile_definitions(pureqrack PUBLIC -DDLL_EXPORTS)
 endif (ENABLE_PYBIND11)

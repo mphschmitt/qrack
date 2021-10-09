@@ -15,4 +15,6 @@ PYBIND11_MODULE(pureqrack, m)
     // pybind11::register_exception<std::runtime_error>(module, "QrackRuntimeException");
     // pybind11::register_exception<std::bad_alloc>(module, "QrackBadAllocException");
     // pybind11::register_exception<std::invalid_argument>(module, "QrackInvalidArgumentException");
+
+    m.doc() = "Qrack pybind11 module";
 }
