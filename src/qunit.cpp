@@ -723,32 +723,57 @@ bool QUnit::TrySeparate(bitLenInt qubit)
         RevertBasisY(qubit);
     }
 
-    real1_f probX = (ONE_R1 / 2) - ProbBase(qubit);
-    if (!shard.unit) {
-        return true;
+    real1_f prob;
+    real1_f probX = ZERO_R1;
+    real1_f probY = ZERO_R1;
+    real1_f probZ = ZERO_R1;
+
+    for (bitLenInt i = 0; i < 3; i++) {
+        prob = (ONE_R1 / 2) - ProbBase(qubit);
+
+        if (!shard.unit) {
+            return true;
+        }
+
+        if (!shard.isPauliX && !shard.isPauliY) {
+            probZ = prob;
+        } else if (shard.isPauliX) {
+            probX = prob;
+        } else {
+            probY = prob;
+        }
+
+        if (i >= 2) {
+            continue;
+        }
+
+        if (!shard.isPauliX && !shard.isPauliY) {
+            ConvertZToX(qubit);
+        } else if (shard.isPauliX) {
+            ConvertXToY(qubit);
+        } else {
+            ConvertYToZ(qubit);
+        }
     }
 
-    RevertBasisX(qubit);
-
-    real1_f probZ = (ONE_R1 / 2) - ProbBase(qubit);
-    if (!shard.unit) {
-        return true;
+    real1_f r = sqrt(probZ * probZ + probX * probX + probY * probY);
+    if ((ONE_R1 / 2 - r) > separabilityThreshold) {
+        return false;
     }
 
-    real1_f inclination = acos(ONE_R1 - 2 * probZ);
-    real1_f azimuth = acos((ONE_R1 - 2 * probX) / sin(inclination));
+    real1_f inclination = atan2(sqrt(probX * probX + probY * probY), probZ);
+    real1_f azimuth = atan2(probY, probX);
 
     if (std::isnan(inclination) || std::isinf(inclination) || std::isnan(azimuth) || std::isinf(azimuth)) {
-        ConvertZToY(qubit);
-        ProbBase(qubit);
-
-        return !shard.unit;
+        return false;
     }
+
+    RevertBasis1Qb(qubit);
 
     shard.unit->IAI(shard.mapped, azimuth, inclination);
     shard.isProbDirty = true;
 
-    real1_f prob = (ONE_R1 / 2) - ProbBase(qubit);
+    prob = (ONE_R1 / 2) - ProbBase(qubit);
     if (!shard.unit) {
         ShardAI(shard, azimuth, inclination);
         return true;
@@ -758,7 +783,7 @@ bool QUnit::TrySeparate(bitLenInt qubit)
     if (value) {
         prob = -prob;
     }
-    if ((prob < (SQRT1_2_R1 / 2)) && ((ONE_R1 / 2 - prob) <= separabilityThreshold)) {
+    if ((ONE_R1 / 2 - prob) <= separabilityThreshold) {
         SeparateBit(value, qubit);
         ShardAI(shard, azimuth, inclination);
         return true;
@@ -1060,14 +1085,9 @@ real1_f QUnit::ProbBase(bitLenInt qubit)
     if (!shard.isProbDirty) {
         real1_f prob = clampProb(norm(shard.amp1));
         if (shard.unit) {
-            if (abs(prob - ONE_R1 / 2) < (SQRT1_2_R1 / 2)) {
-                // Projection on another basis could be higher, so don't separate.
-                return norm(shard.amp1);
-            }
-
-            if (IS_AMP_0(shard.amp1)) {
+            if (IS_NORM_0(shard.amp1)) {
                 SeparateBit(false, qubit);
-            } else if (IS_AMP_0(shard.amp0)) {
+            } else if (IS_NORM_0(shard.amp0)) {
                 SeparateBit(true, qubit);
             }
         }
@@ -1083,14 +1103,9 @@ real1_f QUnit::ProbBase(bitLenInt qubit)
     shard.amp1 = complex((real1)sqrt(prob), ZERO_R1);
     shard.amp0 = complex((real1)sqrt(ONE_R1 - prob), ZERO_R1);
 
-    if (abs(prob - ONE_R1 / 2) < (SQRT1_2_R1 / 2)) {
-        // Projection on another basis could be higher, so don't separate.
-        return prob;
-    }
-
-    if (IS_AMP_0(shard.amp1)) {
+    if (IS_NORM_0(shard.amp1)) {
         SeparateBit(false, qubit);
-    } else if (IS_AMP_0(shard.amp0)) {
+    } else if (IS_NORM_0(shard.amp0)) {
         SeparateBit(true, qubit);
     }
 
