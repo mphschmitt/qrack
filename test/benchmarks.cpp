@@ -1368,10 +1368,16 @@ TEST_CASE("test_stabilizer_t_nn_dense", "[supreme]")
                         }
                         // else - identity
 
+                        // It would by "denser" to use CH and CS variants above, instead of CX/CY/CZ, followed by this
+                        // controlled phase gate, but the point is to do the most that we can approximate efficiently.
                         const bitLenInt control[1] = { b1 };
                         const complex top = std::polar(ONE_R1, (real1)(2 * PI_R1 * qReg->Rand()));
                         const complex bottom = std::polar(ONE_R1, (real1)(2 * PI_R1 * qReg->Rand()));
-                        qReg->MCPhase(control, 1U, top, bottom, b2);
+                        if (anti) {
+                            qReg->MACPhase(control, 1U, top, bottom, b2);
+                        } else {
+                            qReg->MCPhase(control, 1U, top, bottom, b2);
+                        }
                     }
                 }
             }
